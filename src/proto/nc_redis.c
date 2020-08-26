@@ -2272,6 +2272,7 @@ redis_failure(struct msg *r)
     case MSG_RSP_REDIS_ERROR_OOM:
     case MSG_RSP_REDIS_ERROR_BUSY:
     case MSG_RSP_REDIS_ERROR_LOADING:
+    case MSG_RSP_REDIS_ERROR_ERR:
         return true;
 
     default:
