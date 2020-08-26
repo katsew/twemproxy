@@ -144,8 +144,9 @@ rsp_filter(struct context *ctx, struct conn *conn, struct msg *msg)
     struct msg *pmsg;
 
     ASSERT(!conn->client && !conn->proxy);
-
+    log_debug(LOG_INFO, "[DEBUGGING] rsp_filter msg is empty? %d", msg_empty(msg));
     if (msg_empty(msg)) {
+        log_debug(LOG_INFO, "[DEBUGGING] rsp_filter msg is empty");
         ASSERT(conn->rmsg == NULL);
         log_debug(LOG_VERB, "filter empty rsp %"PRIu64" on s %d", msg->id,
                   conn->sd);
@@ -155,6 +156,7 @@ rsp_filter(struct context *ctx, struct conn *conn, struct msg *msg)
 
     pmsg = TAILQ_FIRST(&conn->omsg_q);
     if (pmsg == NULL) {
+        log_debug(LOG_INFO, "[DEBUGGING] rsp_filter memcache error");
         log_debug(LOG_ERR, "filter stray rsp %"PRIu64" len %"PRIu32" on s %d",
                   msg->id, msg->mlen, conn->sd);
         rsp_put(msg);
@@ -192,6 +194,7 @@ rsp_filter(struct context *ctx, struct conn *conn, struct msg *msg)
      * If auto_eject_host is enabled, this will also update the failure_count
      * and eject the server if it exceeds the failure_limit
      */
+    log_debug(LOG_INFO, "[DEBUGGING] rsp_filter failure? %d", msg->failure(msg));
     if (msg->failure(msg)) {
         log_debug(LOG_INFO, "server failure rsp %"PRIu64" len %"PRIu32" "
                   "type %d on s %d", msg->id, msg->mlen, msg->type, conn->sd);
@@ -203,6 +206,7 @@ rsp_filter(struct context *ctx, struct conn *conn, struct msg *msg)
         return true;
     }
 
+    log_debug(LOG_INFO, "[DEBUGGING] rsp_filter swallow? %d", pmsg->swallow);
     if (pmsg->swallow) {
         conn->swallow_msg(conn, pmsg, msg);
 
@@ -233,6 +237,7 @@ rsp_forward_stats(struct context *ctx, struct server *server, struct msg *msg, u
 static void
 rsp_forward(struct context *ctx, struct conn *s_conn, struct msg *msg)
 {
+    log_debug(LOG_INFO, "[DEBUGGING] rsp_forward start");
     rstatus_t status;
     struct msg *pmsg;
     struct conn *c_conn;
@@ -262,6 +267,7 @@ rsp_forward(struct context *ctx, struct conn *s_conn, struct msg *msg)
     ASSERT(c_conn->client && !c_conn->proxy);
 
     if (req_done(c_conn, TAILQ_FIRST(&c_conn->omsg_q))) {
+        log_debug(LOG_INFO, "[DEBUGGING] rsp_forward req_done true");
         status = event_add_out(ctx->evb, c_conn);
         if (status != NC_OK) {
             c_conn->err = errno;
@@ -275,6 +281,7 @@ void
 rsp_recv_done(struct context *ctx, struct conn *conn, struct msg *msg,
               struct msg *nmsg)
 {
+    log_debug(LOG_INFO, "[DEBUGGING] rsp_recv_done start");
     ASSERT(!conn->client && !conn->proxy);
     ASSERT(msg != NULL && conn->rmsg == msg);
     ASSERT(!msg->request);
@@ -329,8 +336,10 @@ rsp_send_next(struct context *ctx, struct conn *conn)
     ASSERT(pmsg->request && !pmsg->swallow);
 
     if (req_error(conn, pmsg)) {
+        log_debug(LOG_INFO, "[DEBUGGING] rsp_send_next req_error is true");
         msg = rsp_make_error(ctx, conn, pmsg);
         if (msg == NULL) {
+            log_debug(LOG_INFO, "[DEBUGGING] rsp_send_next rsp_make_error, msg==NULL");
             conn->err = errno;
             return NULL;
         }
@@ -343,6 +352,7 @@ rsp_send_next(struct context *ctx, struct conn *conn)
     ASSERT(!msg->request);
 
     conn->smsg = msg;
+    log_debug(LOG_INFO, "[DEBUGGING] rsp_send_next conn->smsg=msg");
 
     log_debug(LOG_VVERB, "send next rsp %"PRIu64" on c %d", msg->id, conn->sd);
 

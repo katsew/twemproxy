@@ -457,6 +457,7 @@ req_make_reply(struct context *ctx, struct conn *conn, struct msg *req)
 
     rsp = msg_get(conn, false, conn->redis); /* replay */
     if (rsp == NULL) {
+        log_debug(LOG_INFO, "[DEBUGGING] req_make_reply rsp is null");
         conn->err = errno;
         return NC_ENOMEM;
     }
@@ -475,7 +476,7 @@ static bool
 req_filter(struct context *ctx, struct conn *conn, struct msg *msg)
 {
     ASSERT(conn->client && !conn->proxy);
-
+    log_debug(LOG_INFO, "[DEBUGGING] req_filter is msg empty? %d", msg_empty(msg));
     if (msg_empty(msg)) {
         ASSERT(conn->rmsg == NULL);
         log_debug(LOG_VERB, "filter empty req %"PRIu64" from c %d", msg->id,
@@ -489,6 +490,7 @@ req_filter(struct context *ctx, struct conn *conn, struct msg *msg)
      * is the protocol way of doing a passive close. The connection is closed
      * as soon as all pending replies have been written to the client.
      */
+    log_debug(LOG_INFO, "[DEBUGGING] req_filter is msg quit? %d", msg->quit);
     if (msg->quit) {
         log_debug(LOG_INFO, "filter quit req %"PRIu64" from c %d", msg->id,
                   conn->sd);
@@ -510,6 +512,7 @@ req_filter(struct context *ctx, struct conn *conn, struct msg *msg)
     if (!conn_authenticated(conn)) {
         msg->noforward = 1;
     }
+    log_debug(LOG_INFO, "[DEBUGGING] req_filter is msg noforward? %d", msg->noforward);
 
     return false;
 }
@@ -530,13 +533,16 @@ req_forward_error(struct context *ctx, struct conn *conn, struct msg *msg)
     msg->err = errno;
 
     /* noreply request don't expect any response */
+    log_debug(LOG_INFO, "[DEBUGGING] req_forward_error is msg noreply? %d", msg->noreply);
     if (msg->noreply) {
         req_put(msg);
         return;
     }
 
     if (req_done(conn, TAILQ_FIRST(&conn->omsg_q))) {
+        log_debug(LOG_INFO, "[DEBUGGING] req_forward_error req_done is true");
         status = event_add_out(ctx->evb, conn);
+        log_debug(LOG_INFO, "[DEBUGGING] req_forward_error status is %d", status);
         if (status != NC_OK) {
             conn->err = errno;
         }
@@ -634,20 +640,24 @@ req_recv_done(struct context *ctx, struct conn *conn, struct msg *msg,
         return;
     }
 
+    log_debug(LOG_INFO, "[DEBUGGING] req_recv_done is msg noforward? %d", msg->noforward);
     if (msg->noforward) {
         status = req_make_reply(ctx, conn, msg);
+        log_debug(LOG_INFO, "[DEBUGGING] req_recv_done msg status %d", status);
         if (status != NC_OK) {
             conn->err = errno;
             return;
         }
 
         status = msg->reply(msg);
+        log_debug(LOG_INFO, "[DEBUGGING] req_recv_done msg status %d", status);
         if (status != NC_OK) {
             conn->err = errno;
             return;
         }
 
         status = event_add_out(ctx->evb, conn);
+        log_debug(LOG_INFO, "[DEBUGGING] req_recv_done msg status %d", status);
         if (status != NC_OK) {
             conn->err = errno;
         }
@@ -659,7 +669,9 @@ req_recv_done(struct context *ctx, struct conn *conn, struct msg *msg,
     pool = conn->owner;
     TAILQ_INIT(&frag_msgq);
     status = msg->fragment(msg, pool->ncontinuum, &frag_msgq);
+    log_debug(LOG_INFO, "[DEBUGGING] req_recv_done msg status %d", status);
     if (status != NC_OK) {
+        log_debug(LOG_INFO, "[DEBUGGING] req_recv_done is msg noreply? %d", msg->noreply);
         if (!msg->noreply) {
             conn->enqueue_outq(ctx, conn, msg);
         }
@@ -673,7 +685,9 @@ req_recv_done(struct context *ctx, struct conn *conn, struct msg *msg,
     }
 
     status = req_make_reply(ctx, conn, msg);
+    log_debug(LOG_INFO, "[DEBUGGING] req_recv_done msg status? %d", status);
     if (status != NC_OK) {
+        log_debug(LOG_INFO, "[DEBUGGING] req_recv_done is msg noreply? %d", msg->noreply);
         if (!msg->noreply) {
             conn->enqueue_outq(ctx, conn, msg);
         }

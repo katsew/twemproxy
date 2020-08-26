@@ -792,9 +792,10 @@ msg_send_chain(struct context *ctx, struct conn *conn, struct msg *msg)
         if (array_n(&sendv) >= NC_IOV_MAX || nsend >= limit) {
             break;
         }
-
+        log_debug(LOG_INFO, "[DEBUGGING] msg_send_chain send_next called");
         msg = conn->send_next(ctx, conn);
         if (msg == NULL) {
+            log_debug(LOG_INFO, "[DEBUGGING] msg_send_chain loop break");
             break;
         }
     }
@@ -805,6 +806,8 @@ msg_send_chain(struct context *ctx, struct conn *conn, struct msg *msg)
      */
     conn->smsg = NULL;
     if (!TAILQ_EMPTY(&send_msgq) && nsend != 0) {
+        log_debug(LOG_INFO, "[DEBUGGING] msg_send_chain conn_sendv called");
+        log_debug(LOG_INFO, "[DEBUGGING] I should do something before here!!!");
         n = conn_sendv(conn, &sendv, nsend);
     } else {
         n = 0;
@@ -813,14 +816,18 @@ msg_send_chain(struct context *ctx, struct conn *conn, struct msg *msg)
     nsent = n > 0 ? (size_t)n : 0;
 
     /* postprocess - process sent messages in send_msgq */
-
+    log_debug(LOG_INFO, "[DEBUGGING] msg_send_chain post process sent msg start");
     for (msg = TAILQ_FIRST(&send_msgq); msg != NULL; msg = nmsg) {
         nmsg = TAILQ_NEXT(msg, m_tqe);
 
+        log_debug(LOG_INFO, "[DEBUGGING] msg_send_chain remove msg from msgq");
         TAILQ_REMOVE(&send_msgq, msg, m_tqe);
 
+        log_debug(LOG_INFO, "[DEBUGGING] msg_send_chain nsent %d", nsent);
         if (nsent == 0) {
+            log_debug(LOG_INFO, "[DEBUGGING] msg_send_chain msg mlen %d", msg->mlen);
             if (msg->mlen == 0) {
+                log_debug(LOG_INFO, "[DEBUGGING] msg_send_chain send_done");
                 conn->send_done(ctx, conn, msg);
             }
             continue;
@@ -850,12 +857,13 @@ msg_send_chain(struct context *ctx, struct conn *conn, struct msg *msg)
 
         /* message has been sent completely, finalize it */
         if (mbuf == NULL) {
+            log_debug(LOG_INFO, "[DEBUGGING] msg_send_chain send_done mbuf is null");
             conn->send_done(ctx, conn, msg);
         }
     }
 
     ASSERT(TAILQ_EMPTY(&send_msgq));
-
+    log_debug(LOG_INFO, "[DEBUGGING] ret val of msg_send_chain %d", n);
     if (n >= 0) {
         return NC_OK;
     }
