@@ -206,7 +206,9 @@ core_send(struct context *ctx, struct conn *conn)
 {
     rstatus_t status;
 
+    log_debug(LOG_INFO, "[DEBUGGING] core_send conn->send start");
     status = conn->send(ctx, conn);
+    log_debug(LOG_INFO, "[DEBUGGING] core_send conn->send end, status %d", status);
     if (status != NC_OK) {
         log_debug(LOG_INFO, "send on %c %d failed: status: %d errno: %d %s",
                   conn->client ? 'c' : (conn->proxy ? 'p' : 's'), conn->sd,
@@ -219,6 +221,7 @@ core_send(struct context *ctx, struct conn *conn)
 static void
 core_close(struct context *ctx, struct conn *conn)
 {
+    log_debug(LOG_INFO, "[DEBUGGING] core_close start");
     rstatus_t status;
     char type, *addrstr;
 
@@ -236,13 +239,16 @@ core_close(struct context *ctx, struct conn *conn)
               conn->eof, conn->done, conn->recv_bytes, conn->send_bytes,
               conn->err ? ':' : ' ', conn->err ? strerror(conn->err) : "");
 
+    log_debug(LOG_INFO, "[DEBUGGING] core_close event_del_conn start");
     status = event_del_conn(ctx->evb, conn);
+    log_debug(LOG_INFO, "[DEBUGGING] core_close event_del_conn end, status %d", status);
     if (status < 0) {
         log_warn("event del conn %c %d failed, ignored: %s",
                  type, conn->sd, strerror(errno));
     }
 
     conn->close(ctx, conn);
+    log_debug(LOG_INFO, "[DEBUGGING] core_close conn->close done");
 }
 
 static void

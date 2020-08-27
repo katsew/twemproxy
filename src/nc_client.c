@@ -179,7 +179,9 @@ client_close(struct context *ctx, struct conn *conn)
 
     conn->unref(conn);
 
+    log_debug(LOG_INFO, "[DEBUGGING] client_close close socket start");
     status = close(conn->sd);
+    log_debug(LOG_INFO, "[DEBUGGING] client_close close socket end, status %d", status);
     if (status < 0) {
         log_error("close c %d failed, ignored: %s", conn->sd, strerror(errno));
     }
