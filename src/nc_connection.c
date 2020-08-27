@@ -382,6 +382,57 @@ conn_recv(struct conn *conn, void *buf, size_t size)
 }
 
 ssize_t
+conn_noop(struct conn *conn, struct array *sendv, size_t nsend)
+{
+    ssize_t n;
+
+    ASSERT(array_n(sendv) > 0);
+    ASSERT(nsend != 0);
+    ASSERT(conn->send_ready);
+    log_debug(LOG_INFO, "[DEBUGGING] noop start");
+    for (;;) {
+        // n = nc_writev(conn->sd, sendv->elem, sendv->nelem);
+        n = (ssize_t) nsend;
+        log_debug(LOG_INFO, "[DEBUGGING] noop faking writev by setting n %zd to nsend %zu", n, nsend);
+
+        log_debug(LOG_VERB, "sendv on sd %d %zd of %zu in %"PRIu32" buffers",
+                  conn->sd, n, nsend, sendv->nelem);
+
+        if (n > 0) {
+            if (n < (ssize_t) nsend) {
+                conn->send_ready = 0;
+            }
+            conn->send_bytes += (size_t)n;
+            return n;
+        }
+
+        if (n == 0) {
+            log_warn("sendv on sd %d returned zero", conn->sd);
+            conn->send_ready = 0;
+            return 0;
+        }
+
+        if (errno == EINTR) {
+            log_debug(LOG_VERB, "sendv on sd %d not ready - eintr", conn->sd);
+            continue;
+        } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            conn->send_ready = 0;
+            log_debug(LOG_VERB, "sendv on sd %d not ready - eagain", conn->sd);
+            return NC_EAGAIN;
+        } else {
+            conn->send_ready = 0;
+            conn->err = errno;
+            log_error("sendv on sd %d failed: %s", conn->sd, strerror(errno));
+            return NC_ERROR;
+        }
+    }
+
+    NOT_REACHED();
+
+    return NC_ERROR;
+}
+
+ssize_t
 conn_sendv(struct conn *conn, struct array *sendv, size_t nsend)
 {
     ssize_t n;

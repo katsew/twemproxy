@@ -808,7 +808,13 @@ msg_send_chain(struct context *ctx, struct conn *conn, struct msg *msg)
     if (!TAILQ_EMPTY(&send_msgq) && nsend != 0) {
         log_debug(LOG_INFO, "[DEBUGGING] msg_send_chain conn_sendv called");
         log_debug(LOG_INFO, "[DEBUGGING] I should do something before here!!!");
-        n = conn_sendv(conn, &sendv, nsend);
+        if (msg->failure(msg)) {
+            log_debug(LOG_INFO, "[DEBUGGING] I should handle error!!!");
+            n = conn_noop(conn, &sendv, nsend);
+        } else {
+            log_debug(LOG_INFO, "[DEBUGGING] No error, write!");
+            n = conn_sendv(conn, &sendv, nsend);
+        }
     } else {
         n = 0;
     }
@@ -881,13 +887,17 @@ msg_send(struct context *ctx, struct conn *conn)
 
     conn->send_ready = 1;
     do {
+        log_debug(LOG_INFO, "[DEBUGGING] msg_send conn->send_next");
         msg = conn->send_next(ctx, conn);
         if (msg == NULL) {
             /* nothing to send */
+            log_debug(LOG_INFO, "[DEBUGGING] msg_send conn->send_next nothing to send");
             return NC_OK;
         }
 
+        log_debug(LOG_INFO, "[DEBUGGING] msg_send msg_send_chain start");
         status = msg_send_chain(ctx, conn, msg);
+        log_debug(LOG_INFO, "[DEBUGGING] msg_send msg_send_chain end, status %d", status);
         if (status != NC_OK) {
             return status;
         }
