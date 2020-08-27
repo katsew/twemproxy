@@ -795,7 +795,7 @@ msg_send_chain(struct context *ctx, struct conn *conn, struct msg *msg)
         log_debug(LOG_INFO, "[DEBUGGING] msg_send_chain send_next called");
         msg = conn->send_next(ctx, conn);
         if (msg == NULL) {
-            log_debug(LOG_INFO, "[DEBUGGING] msg_send_chain loop break");
+            log_debug(LOG_INFO, "[DEBUGGING] msg_send_chain msg==NULL, loop break");
             break;
         }
     }
@@ -806,15 +806,16 @@ msg_send_chain(struct context *ctx, struct conn *conn, struct msg *msg)
      */
     conn->smsg = NULL;
     if (!TAILQ_EMPTY(&send_msgq) && nsend != 0) {
-        log_debug(LOG_INFO, "[DEBUGGING] msg_send_chain conn_sendv called");
-        log_debug(LOG_INFO, "[DEBUGGING] I should do something before here!!!");
-        if (msg->failure(msg)) {
+        log_debug(LOG_INFO, "[DEBUGGING] msg_send_chain sending msg...");
+        log_debug(LOG_INFO, "[DEBUGGING] msg_send_chain conn err %d, owner %p, redis: %d, client: %d, done %d", conn->err, conn->owner, conn->redis, conn->client, conn->done);
+        if (true) {
             log_debug(LOG_INFO, "[DEBUGGING] I should handle error!!!");
             n = conn_noop(conn, &sendv, nsend);
         } else {
             log_debug(LOG_INFO, "[DEBUGGING] No error, write!");
             n = conn_sendv(conn, &sendv, nsend);
         }
+        log_debug(LOG_INFO, "[DEBUGGING] I should have done something before here... n %d", n);
     } else {
         n = 0;
     }
