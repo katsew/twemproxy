@@ -305,16 +305,19 @@ rsp_send_next(struct context *ctx, struct conn *conn)
     struct msg *msg, *pmsg; /* response and it's peer request */
 
     ASSERT(conn->client && !conn->proxy);
-
+    log_debug(LOG_INFO, "[DEBUGGING] rsp_send_next start...");
     pmsg = TAILQ_FIRST(&conn->omsg_q);
     if (pmsg == NULL || !req_done(conn, pmsg)) {
+        log_debug(LOG_INFO, "[DEBUGGING] rsp_send_next nothing is out");
         /* nothing is outstanding, initiate close? */
         if (pmsg == NULL && conn->eof) {
+            log_debug(LOG_INFO, "[DEBUGGING] rsp_send_next nothing is out, close");
             conn->done = 1;
             log_debug(LOG_INFO, "c %d is done", conn->sd);
         }
-
+        log_debug(LOG_INFO, "[DEBUGGING] rsp_send_next event_del_out start");
         status = event_del_out(ctx->evb, conn);
+        log_debug(LOG_INFO, "[DEBUGGING] rsp_send_next event_del_out end, status %d", status);
         if (status != NC_OK) {
             conn->err = errno;
         }
@@ -322,14 +325,17 @@ rsp_send_next(struct context *ctx, struct conn *conn)
         return NULL;
     }
 
+    log_debug(LOG_INFO, "[DEBUGGING] rsp_send_next check msg");
     msg = conn->smsg;
     if (msg != NULL) {
+        log_debug(LOG_INFO, "[DEBUGGING] rsp_send_next msg is NULL, get next from peer");
         ASSERT(!msg->request && msg->peer != NULL);
         ASSERT(req_done(conn, msg->peer));
         pmsg = TAILQ_NEXT(msg->peer, c_tqe);
     }
 
     if (pmsg == NULL || !req_done(conn, pmsg)) {
+        log_debug(LOG_INFO, "[DEBUGGING] rsp_send_next msg is still NULL, return NULL");
         conn->smsg = NULL;
         return NULL;
     }
