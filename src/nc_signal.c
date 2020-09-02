@@ -105,6 +105,7 @@ signal_handler(int signo)
         break;
 
     case SIGINT:
+    case SIGTERM:
         done = true;
         actionstr = ", exiting";
         break;
@@ -126,6 +127,6 @@ signal_handler(int signo)
     }
 
     if (done) {
-        exit(1);
+        exit(0);
     }
 }
