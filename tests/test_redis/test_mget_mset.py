@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 #coding: utf-8
 
-from common import *
+from .common import *
 
 def test_mget_mset(kv=default_kv):
     r = getconn()
 
     def insert_by_pipeline():
         pipe = r.pipeline(transaction=False)
-        for k, v in kv.items():
+        for k, v in list(kv.items()):
             pipe.set(k, v)
+
         pipe.execute()
 
     def insert_by_mset():
-        ret = r.mset(**kv)
+        ret = r.mset(kv)
 
     #insert_by_mset() #only the mget-imporve branch support this
     try:
@@ -21,7 +22,7 @@ def test_mget_mset(kv=default_kv):
     except:
         insert_by_pipeline()
 
-    keys = kv.keys()
+    keys = list(kv.keys())
 
     #mget to check
     vals = r.mget(keys)
@@ -42,7 +43,7 @@ def test_mget_mset_on_key_not_exist(kv=default_kv):
 
     def insert_by_pipeline():
         pipe = r.pipeline(transaction=False)
-        for k, v in kv.items():
+        for k, v in list(kv.items()):
             pipe.set(k, v)
         pipe.execute()
 
@@ -54,7 +55,7 @@ def test_mget_mset_on_key_not_exist(kv=default_kv):
     except:
         insert_by_pipeline()
 
-    keys = kv.keys()
+    keys = list(kv.keys())
     keys2 = ['x-'+k for k in keys]
     keys = keys + keys2
     random.shuffle(keys)
@@ -104,7 +105,7 @@ def test_mget_special_key_2(cnt=5):
 def test_mget_on_backend_down():
     #one backend down
 
-    r = redis.Redis(nc.host(), nc.port())
+    r = redis.Redis(nc.host(), nc.port(), decode_responses=True)
     assert_equal(None, r.get('key-2'))
     assert_equal(None, r.get('key-1'))
 
@@ -119,7 +120,7 @@ def test_mget_on_backend_down():
 
     #all backend down
     all_redis[1].stop()
-    r = redis.Redis(nc.host(), nc.port())
+    r = redis.Redis(nc.host(), nc.port(), decode_responses=True)
 
     assert_fail('Connection refused|reset by peer|Broken pipe', r.mget, 'key-1')
     assert_fail('Connection refused|reset by peer|Broken pipe', r.mget, 'key-2')
@@ -132,7 +133,7 @@ def test_mget_on_backend_down():
 
 def test_mset_on_backend_down():
     all_redis[0].stop()
-    r = redis.Redis(nc.host(),nc.port())
+    r = redis.Redis(nc.host(),nc.port(), decode_responses=True)
 
     assert_fail('Connection refused|Broken pipe',r.mset,default_kv)
 
@@ -146,22 +147,22 @@ def test_mget_pipeline():
     r = getconn()
 
     pipe = r.pipeline(transaction=False)
-    for k,v in default_kv.items():
+    for k,v in list(default_kv.items()):
         pipe.set(k,v)
-    keys = default_kv.keys()
+    keys = list(default_kv.keys())
     pipe.mget(keys)
     kv = {}
     for i in range(large):
         kv['kkk-%s' % i] = os.urandom(100)
-    for k,v in kv.items():
+    for k,v in list(kv.items()):
         pipe.set(k,v)
-    for k in kv.keys():
+    for k in list(kv.keys()):
         pipe.get(k)
     rst = pipe.execute()
 
     #print rst
     #check the result
-    keys = default_kv.keys()
+    keys = list(default_kv.keys())
 
     #mget to check
     vals = r.mget(keys)
@@ -194,7 +195,7 @@ def test_multi_delete_normal():
 def test_multi_delete_on_readonly():
     all_redis[0].slaveof(all_redis[1].args['host'], all_redis[1].args['port'])
 
-    r = redis.Redis(nc.host(), nc.port())
+    r = redis.Redis(nc.host(), nc.port(), decode_responses=True)
 
     # got "You can't write against a read only slave"
     assert_fail("You can't write against a read only (slave|replica).", r.delete, 'key-1')
@@ -207,7 +208,7 @@ def test_multi_delete_on_readonly():
 def test_multi_delete_on_backend_down():
     #one backend down
     all_redis[0].stop()
-    r = redis.Redis(nc.host(), nc.port())
+    r = redis.Redis(nc.host(), nc.port(), decode_responses=True)
 
     assert_fail('Connection refused|reset by peer|Broken pipe', r.delete, 'key-1')
     assert_equal(None, r.get('key-2'))
@@ -217,7 +218,7 @@ def test_multi_delete_on_backend_down():
 
     #all backend down
     all_redis[1].stop()
-    r = redis.Redis(nc.host(), nc.port())
+    r = redis.Redis(nc.host(), nc.port(), decode_responses=True)
 
     assert_fail('Connection refused|reset by peer|Broken pipe', r.delete, 'key-1')
     assert_fail('Connection refused|reset by peer|Broken pipe', r.delete, 'key-2')

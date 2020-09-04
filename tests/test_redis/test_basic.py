@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #coding: utf-8
 
-from common import *
+from .common import *
 
 def test_setget():
     r = getconn()
@@ -13,8 +13,8 @@ def test_msetnx():
     r = getconn()
 
     #not supported
-    keys = default_kv.keys()
-    assert_fail('Socket closed|Connection closed', r.msetnx,**default_kv)
+    keys = list(default_kv.keys())
+    assert_fail('Socket closed|Connection closed', r.msetnx, default_kv)
 
 def test_null_key():
     r = getconn()
@@ -25,7 +25,7 @@ def test_null_key():
     assert(r.get('') == '')
 
     kv = {'' : 'val', 'k': 'v'}
-    ret = r.mset(**kv)
+    ret = r.mset(kv)
     assert(r.get('') == 'val')
 
 def test_ping_quit():
@@ -63,7 +63,7 @@ def test_signal():
     nc.signal('SEGV')
 
     time.sleep(.3)
-    log = file(nc.logfile()).read()
+    log = open(nc.logfile()).read()
 
     assert(strstr(log, 'HUP'))
     assert(strstr(log, 'TTIN'))
@@ -78,7 +78,7 @@ def test_nc_stats():
     nc.start()
     r = getconn()
     kv = {'kkk-%s' % i :'vvv-%s' % i for i in range(10)}
-    for k, v in kv.items():
+    for k, v in list(kv.items()):
         r.set(k, v)
         r.get(k)
 
@@ -92,7 +92,7 @@ def test_nc_stats():
 
         #sum num of each server
         ret = 0
-        for k, v in stat[CLUSTER_NAME].items():
+        for k, v in list(stat[CLUSTER_NAME].items()):
             if type(v) == dict:
                 ret += v[name]
         return ret
@@ -101,7 +101,7 @@ def test_nc_stats():
     assert(get_stat('responses') == 20)
 
     ##### mget
-    keys = kv.keys()
+    keys = list(kv.keys())
     r.mget(keys)
 
     #for version<=0.3.0
@@ -115,12 +115,12 @@ def test_nc_stats():
 def test_issue_323():
     # do on redis
     r = all_redis[0]
-    c = redis.Redis(r.host(), r.port())
-    assert([1, 'OK'] == c.eval("return {1, redis.call('set', 'x', '1')}", 1, 'tmp'))
+    c = redis.Redis(r.host(), r.port(), decode_responses=True)
+    assert([1, 'OK'] == c.eval(b"return {1, redis.call('set', 'x', '1')}", 1, 'tmp'))
 
     # do on twemproxy
     c = getconn()
-    assert([1, 'OK'] == c.eval("return {1, redis.call('set', 'x', '1')}", 1, 'tmp'))
+    assert([1, 'OK'] == c.eval(b"return {1, redis.call('set', 'x', '1')}", 1, 'tmp'))
 
 def setup_and_wait():
     time.sleep(60*60)
