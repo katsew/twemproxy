@@ -3,12 +3,15 @@
 
 from .common import *
 
-def test_mget_mset(kv=default_kv):
-    r = getconn()
+def test_mget_mset(kv=default_kv, no_decode=False):
+    if no_decode:
+        r = getconn_no_decode()
+    else:
+        r = getconn()
 
     def insert_by_pipeline():
         pipe = r.pipeline(transaction=False)
-        for k, v in list(kv.items()):
+        for k, v in kv.items():
             pipe.set(k, v)
 
         pipe.execute()
@@ -22,7 +25,7 @@ def test_mget_mset(kv=default_kv):
     except:
         insert_by_pipeline()
 
-    keys = list(kv.keys())
+    keys = kv.keys()
 
     #mget to check
     vals = r.mget(keys)
@@ -43,7 +46,7 @@ def test_mget_mset_on_key_not_exist(kv=default_kv):
 
     def insert_by_pipeline():
         pipe = r.pipeline(transaction=False)
-        for k, v in list(kv.items()):
+        for k, v in kv.items():
             pipe.set(k, v)
         pipe.execute()
 
@@ -144,25 +147,25 @@ def test_mset_on_backend_down():
         r.start()
 
 def test_mget_pipeline():
-    r = getconn()
+    r = getconn_no_decode()
 
     pipe = r.pipeline(transaction=False)
-    for k,v in list(default_kv.items()):
+    for k,v in default_kv.items():
         pipe.set(k,v)
-    keys = list(default_kv.keys())
+    keys = default_kv.keys()
     pipe.mget(keys)
     kv = {}
     for i in range(large):
         kv['kkk-%s' % i] = os.urandom(100)
-    for k,v in list(kv.items()):
+    for k,v in kv.items():
         pipe.set(k,v)
-    for k in list(kv.keys()):
+    for k in kv.keys():
         pipe.get(k)
     rst = pipe.execute()
 
     #print rst
     #check the result
-    keys = list(default_kv.keys())
+    keys = default_kv.keys()
 
     #mget to check
     vals = r.mget(keys)

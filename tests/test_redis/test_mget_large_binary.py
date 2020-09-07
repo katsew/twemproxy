@@ -24,11 +24,11 @@ def teardown():
         r.stop()
 
 ######################################################
-def test_mget_binary_value(cnt=5):
+def test_mget_binary_value(cnt=1):
     kv = {}
     for i in range(cnt):
         kv['kkk-%s' % i] = os.urandom(1024*1024*16+1024) #16M
     for i in range(cnt):
-        kv['kkk2-%s' % i] = ''
-    _mget_mset(kv)
+        kv['kkk2-%s' % i] = b''
+    _mget_mset(kv, no_decode=True)
 

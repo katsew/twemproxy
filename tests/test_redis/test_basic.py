@@ -13,7 +13,7 @@ def test_msetnx():
     r = getconn()
 
     #not supported
-    keys = list(default_kv.keys())
+    keys = default_kv.keys()
     assert_fail('Socket closed|Connection closed', r.msetnx, default_kv)
 
 def test_null_key():
@@ -78,7 +78,7 @@ def test_nc_stats():
     nc.start()
     r = getconn()
     kv = {'kkk-%s' % i :'vvv-%s' % i for i in range(10)}
-    for k, v in list(kv.items()):
+    for k, v in kv.items():
         r.set(k, v)
         r.get(k)
 
@@ -101,7 +101,7 @@ def test_nc_stats():
     assert(get_stat('responses') == 20)
 
     ##### mget
-    keys = list(kv.keys())
+    keys = kv.keys()
     r.mget(keys)
 
     #for version<=0.3.0
