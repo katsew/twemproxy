@@ -138,10 +138,10 @@ def test_mset_on_backend_down():
     all_redis[0].stop()
     r = redis.Redis(nc.host(),nc.port(), decode_responses=True)
 
-    assert_fail('Connection refused|Broken pipe',r.mset,default_kv)
+    assert_fail('Connection refused|reset by peer|Broken pipe',r.mset,default_kv)
 
     all_redis[1].stop()
-    assert_fail('Connection refused|Broken pipe',r.mset,default_kv)
+    assert_fail('Connection refused|reset by peer|Broken pipe',r.mset,default_kv)
 
     for r in all_redis:
         r.start()
