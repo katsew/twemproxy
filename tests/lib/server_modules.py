@@ -77,7 +77,6 @@ class Base:
 
         t2 = time.time()
         logging.info('%s start ok in %.2f seconds' %(self, t2-t1) )
-        self.args['pid'] = self.pid()
 
     def stop(self):
         if not self._alive():
@@ -85,7 +84,6 @@ class Base:
             return
 
         cmd = TT("cd $path && ./${name}_control stop", self.args)
-        cmd = "%s %d" % (cmd, self.args['pid'])
         self._run(cmd)
 
         t1 = time.time()
@@ -95,12 +93,8 @@ class Base:
         logging.info('%s stop ok in %.2f seconds' %(self, t2-t1) )
 
     def pid(self):
-        print((self.args['pidfile']))
-
-        with open(self.args['pidfile']) as f:
-            ret = f.read()
-
-        return int(ret)
+        cmd = TT("pgrep -f '^$runcmd'", self.args)
+        return self._run(cmd)
 
     def status(self):
         logging.warn("status: not implement")

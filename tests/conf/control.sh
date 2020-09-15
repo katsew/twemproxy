@@ -1,6 +1,6 @@
 #!/bin/bash
 
-start()
+start() 
 {
     stop
     ulimit -c unlimited
@@ -12,21 +12,21 @@ start()
     popd
 }
 
-stop()
+stop() 
 {
-    kill -9 $$1
+    pkill -9 -f '${runcmd}'
 }
 
 case C"$$1" in
     C)
         echo "Usage: $$0 {start|stop}"
-        ;;
+        ;; 
     Cstart)
         start
         echo "Done!"
         ;;
     Cstop)
-        stop $$2
+        stop
         echo "Done!"
         ;;
     C*)
