@@ -121,8 +121,8 @@ class RedisServer(Base):
     def __init__(self, host, port, path, cluster_name, server_name, auth = None):
         Base.__init__(self, 'redis', host, port, path)
 
-        self.args['startcmd']     = TT('bin/redis-server conf/redis.conf', self.args)
-        self.args['runcmd']       = TT('redis-server \*:$port', self.args)
+        self.args['startcmd']     = TT('bin/redis-server conf/redis.conf --port $port', self.args)
+        self.args['runcmd']       = TT('redis-server.*$port', self.args)
         self.args['conf']         = TT('$path/conf/redis.conf', self.args)
         self.args['pidfile']      = TT('$path/log/redis.pid', self.args)
         self.args['logfile']      = TT('$path/log/redis.log', self.args)
